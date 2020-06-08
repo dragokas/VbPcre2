@@ -1439,7 +1439,7 @@ Private Sub ClearFields()
 End Sub
 
 Private Sub cmdExecute_Click()
-    If chkSuppressErrors.Value = 1 Then On Error GoTo ErrorHandler  '// TODO: don't know why I can't catch error here in IDE mode (in compiled - all ok)
+    If chkSuppressErrors.Value = 1 Then On Error GoTo ErrorHandler
     Dim l_EngineName As String
     Dim i&
     
@@ -1465,23 +1465,34 @@ Private Sub cmdExecute_Click()
         ii = 0
         jj = 0
         
+        If chkSuppressErrors.Value = 1 Then On Error Resume Next
+        Err.Clear
         Set lo_Matches = mo_Regexp.Execute(RTBReadUnicode(txtSource))   'run "Execute" method
-   
-        PrintText l_EngineName, "Match Count: " & lo_Matches.Count
-        PrintText l_EngineName, ""
-
-        For Each lo_Match In lo_Matches
+        
+        If Err.Number <> 0 Then
+            
+            PrintText l_EngineName, "Error " & Err.Number & " - " & Err.Description
+        
+            If chkSuppressErrors.Value = 1 Then On Error GoTo ErrorHandler Else On Error GoTo 0
+        Else
+            If chkSuppressErrors.Value = 1 Then On Error GoTo ErrorHandler Else On Error GoTo 0
+            
+            PrintText l_EngineName, "Match Count: " & lo_Matches.Count
+            PrintText l_EngineName, ""
     
-            Set lo_Submatches = lo_Match.SubMatches
+            For Each lo_Match In lo_Matches
+        
+                Set lo_Submatches = lo_Match.SubMatches
+        
+                ii = ii + 1
+                PrintText l_EngineName, "#" & ii & ": " & lo_Match.Value
     
-            ii = ii + 1
-            PrintText l_EngineName, "#" & ii & ": " & lo_Match.Value
-
-            For Each lo_SubMatch In lo_Submatches
-                jj = jj + 1
-                PrintText l_EngineName, Space(30) & "Sub.#" & jj & ": " & lo_SubMatch
+                For Each lo_SubMatch In lo_Submatches
+                    jj = jj + 1
+                    PrintText l_EngineName, Space(30) & "Sub.#" & jj & ": " & lo_SubMatch
+                Next
             Next
-        Next
+        End If
     
     Next
     
@@ -1492,19 +1503,38 @@ ErrorHandler:
 End Sub
 
 Private Sub cmdTest_Click()
-    If chkSuppressErrors.Value = 1 Then On Error GoTo ErrorHandler  '// TODO: don't know why I can't catch error here in IDE mode (in compiled - all ok)
+    If chkSuppressErrors.Value = 1 Then On Error GoTo ErrorHandler
     Dim l_EngineName As String
+    Dim bResult As Boolean
     
     ClearFields
     ApplySettings
     
+    If chkSuppressErrors.Value = 1 Then On Error Resume Next
+    
     l_EngineName = "VBScript.Regexp"
     mo_Regexp.UsePcre = False
-    PrintText l_EngineName, mo_Regexp.Test(RTBReadUnicode(txtSource)) 'run "Test" method
+    Err.Clear
+    bResult = mo_Regexp.Test(RTBReadUnicode(txtSource))
+    
+    If Err.Number <> 0 Then
+        PrintText l_EngineName, "Error " & Err.Number & " - " & Err.Description
+    Else
+        PrintText l_EngineName, CStr(bResult) 'run "Test" method
+    End If
     
     l_EngineName = "PCRE2"
     mo_Regexp.UsePcre = True
-    PrintText l_EngineName, mo_Regexp.Test(RTBReadUnicode(txtSource)) 'run "Test" method
+    Err.Clear
+    bResult = mo_Regexp.Test(RTBReadUnicode(txtSource))
+    
+    If Err.Number <> 0 Then
+        PrintText l_EngineName, "Error " & Err.Number & " - " & Err.Description
+    Else
+        PrintText l_EngineName, CStr(bResult) 'run "Test" method
+    End If
+    
+    If chkSuppressErrors.Value = 1 Then On Error GoTo ErrorHandler Else On Error GoTo 0
     
     CheckDifference
     Exit Sub
@@ -1513,19 +1543,37 @@ ErrorHandler:
 End Sub
 
 Private Sub cmdReplace_Click()
-    If chkSuppressErrors.Value = 1 Then On Error GoTo ErrorHandler  '// TODO: don't know why I can't catch error here in IDE mode (in compiled - all ok)
+    If chkSuppressErrors.Value = 1 Then On Error GoTo ErrorHandler
     Dim l_EngineName As String
+    Dim sResult As String
     
     ClearFields
     ApplySettings
     
+    If chkSuppressErrors.Value = 1 Then On Error Resume Next
+    
     l_EngineName = "VBScript.Regexp"
     mo_Regexp.UsePcre = False
-    PrintText l_EngineName, mo_Regexp.Replace(RTBReadUnicode(txtSource), RTBReadUnicode(txtReplace))  'run "Replace" method
+    Err.Clear
+    sResult = mo_Regexp.Replace(RTBReadUnicode(txtSource), RTBReadUnicode(txtReplace))
+    
+    If Err.Number <> 0 Then
+        PrintText l_EngineName, "Error " & Err.Number & " - " & Err.Description
+    Else
+        PrintText l_EngineName, sResult  'run "Replace" method
+    End If
     
     l_EngineName = "PCRE2"
     mo_Regexp.UsePcre = True
-    PrintText l_EngineName, mo_Regexp.Replace(RTBReadUnicode(txtSource), RTBReadUnicode(txtReplace))  'run "Replace" method
+    Err.Clear
+    
+    If Err.Number <> 0 Then
+        PrintText l_EngineName, "Error " & Err.Number & " - " & Err.Description
+    Else
+        PrintText l_EngineName, sResult  'run "Replace" method
+    End If
+    
+    If chkSuppressErrors.Value = 1 Then On Error GoTo ErrorHandler Else On Error GoTo 0
     
     CheckDifference
     Exit Sub
